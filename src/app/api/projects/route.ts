@@ -3,65 +3,14 @@ import { NextRequest } from "next/server";
 import { decimalOrUndefined, created, handleError, success } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { createProjectSchema } from "@/lib/validators";
+import { getProjectSummaries } from "@/server/projects";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const [projects, expenseTotals] = await Promise.all([
-      prisma.project.findMany({
-        include: {
-          progressLogs: {
-            orderBy: { recordedAt: "desc" },
-            take: 1,
-          },
-          _count: {
-            select: {
-              expenses: true,
-              cheques: true,
-              salesContracts: true,
-            },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.expense.groupBy({
-        by: ["projectId"],
-        _sum: { amount: true },
-      }),
-    ]);
-
-    const totalsMap = new Map<number, number>();
-    for (const total of expenseTotals) {
-      if (total.projectId !== null) {
-        const amount = total._sum.amount ?? 0;
-        totalsMap.set(total.projectId, Number(amount));
-      }
-    }
-
-  const data = projects.map((project: (typeof projects)[number]) => {
-      const latestProgress = project.progressLogs.at(0);
-      return {
-        id: project.id,
-        name: project.name,
-        code: project.code,
-        status: project.status,
-        progress: latestProgress?.progress ?? project.progress,
-        summary: latestProgress?.summary,
-        budget: project.budget ? Number(project.budget) : null,
-        actualCost: project.actualCost ? Number(project.actualCost) : null,
-        totalExpense: totalsMap.get(project.id) ?? 0,
-        counts: project._count,
-        startDate: project.startDate,
-        endDate: project.endDate,
-        location: project.location,
-        managerName: project.managerName,
-        createdAt: project.createdAt,
-        updatedAt: project.updatedAt,
-      };
-    });
-
+    const data = await getProjectSummaries();
     return success(data);
   } catch (error) {
     return handleError(error);
