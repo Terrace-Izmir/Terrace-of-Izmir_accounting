@@ -345,7 +345,10 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
                 Proje Durumu
               </label>
               <select
-                {...projectForm.register("status")}
+                {...projectForm.register("status", {
+                  setValueAs: (value: string) =>
+                    value === "" ? undefined : (value as ProjectStatus),
+                })}
                 className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white"
               >
                 {projectStatusValues.map((status) => (
@@ -418,7 +421,10 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
                   Yeni Durum
                 </label>
                 <select
-                  {...progressForm.register("status")}
+                  {...progressForm.register("status", {
+                    setValueAs: (value: string) =>
+                      value === "" ? undefined : (value as ProjectStatus),
+                  })}
                   className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white"
                 >
                   <option value="">Değişiklik yok</option>
