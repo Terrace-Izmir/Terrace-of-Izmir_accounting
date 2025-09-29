@@ -1,14 +1,34 @@
 "use client";
 
-import { type LucideIcon } from "lucide-react";
+import {
+  Building2,
+  FileStack,
+  HandPlatter,
+  LayoutDashboard,
+  Receipt,
+  ScrollText,
+  Users2,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 
+const ICON_MAP = {
+  dashboard: LayoutDashboard,
+  projects: Building2,
+  expenses: Receipt,
+  cheques: ScrollText,
+  partnership: Users2,
+  contracts: HandPlatter,
+  documents: FileStack,
+} as const;
+
+type IconKey = keyof typeof ICON_MAP;
+
 export type NavItem = {
   label: string;
   href: string;
-  icon: LucideIcon;
+  icon: IconKey;
   description?: string;
 };
 
@@ -26,6 +46,8 @@ export function SidebarNav({ items }: SidebarNavProps) {
           pathname === item.href ||
           (item.href !== "/" && pathname.startsWith(item.href));
 
+        const Icon = ICON_MAP[item.icon];
+
         return (
           <Link
             key={item.href}
@@ -38,7 +60,7 @@ export function SidebarNav({ items }: SidebarNavProps) {
             )}
           >
             <div className="flex items-center gap-3">
-              <item.icon className="h-5 w-5" />
+              <Icon className="h-5 w-5" />
               <span className="text-sm font-medium uppercase tracking-wide">
                 {item.label}
               </span>

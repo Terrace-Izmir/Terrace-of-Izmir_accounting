@@ -69,7 +69,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
   );
 
   const projectForm = useForm<ProjectFormValues>({
-    resolver: zodResolver(createProjectSchema) as unknown as Resolver<ProjectFormValues>,
+    resolver: zodResolver(createProjectSchema) as Resolver<ProjectFormValues>,
     defaultValues: {
       progress: 0,
       status: "PLANNING",
@@ -77,7 +77,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
   });
 
   const progressForm = useForm<ProgressFormValues>({
-    resolver: zodResolver(createProgressLogSchema) as unknown as Resolver<ProgressFormValues>,
+    resolver: zodResolver(createProgressLogSchema) as Resolver<ProgressFormValues>,
     defaultValues: {
       projectId: selectedProject?.id,
       progress: selectedProject?.progress ?? 0,

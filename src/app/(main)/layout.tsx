@@ -1,14 +1,4 @@
 import type { ReactNode } from "react";
-import {
-  Building2,
-  FileStack,
-  HandPlatter,
-  LayoutDashboard,
-  Receipt,
-  ScrollText,
-  Users2,
-} from "lucide-react";
-
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { TopBar } from "@/components/layout/top-bar";
 
@@ -16,43 +6,43 @@ const NAV_ITEMS = [
   {
     label: "Kontrol Paneli",
     href: "/",
-    icon: LayoutDashboard,
+    icon: "dashboard",
     description: "Finansal özet ve kritik göstergeler",
   },
   {
     label: "Projeler",
     href: "/projects",
-    icon: Building2,
+    icon: "projects",
     description: "İlerleme, bütçe ve kârlılık takibi",
   },
   {
     label: "Masraflar",
     href: "/expenses",
-    icon: Receipt,
+    icon: "expenses",
     description: "Masraf yönetimi ve OCR kayıtları",
   },
   {
     label: "Çek / Senet",
     href: "/cheques",
-    icon: ScrollText,
+    icon: "cheques",
     description: "Yaklaşan ödemeler ve hatırlatmalar",
   },
   {
     label: "Adi Ortaklık",
     href: "/partnership",
-    icon: Users2,
+    icon: "partnership",
     description: "Ortak hareketleri ve dengeler",
   },
   {
     label: "Sözleşmeler",
     href: "/contracts",
-    icon: HandPlatter,
+    icon: "contracts",
     description: "Satış ve sözleşme takibi",
   },
   {
     label: "Dosya Merkezi",
     href: "/documents",
-    icon: FileStack,
+    icon: "documents",
     description: "Şantiye ve finans dökümanları",
   },
 ] as const;
