@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const projectStatusValues = [
+export const projectStatusValues = [
   "PLANNING",
   "IN_PROGRESS",
   "ON_HOLD",
@@ -8,18 +8,18 @@ const projectStatusValues = [
   "CANCELLED",
 ] as const;
 
-const chequeTypeValues = ["CHEQUE", "PROMISSORY_NOTE"] as const;
+export const chequeTypeValues = ["CHEQUE", "PROMISSORY_NOTE"] as const;
 
-const chequeStatusValues = ["PENDING", "PAID", "CANCELLED"] as const;
+export const chequeStatusValues = ["PENDING", "PAID", "CANCELLED"] as const;
 
-const partnershipTransactionValues = [
+export const partnershipTransactionValues = [
   "CONTRIBUTION",
   "EXPENSE",
   "WITHDRAWAL",
   "ADJUSTMENT",
 ] as const;
 
-const contractStatusValues = [
+export const contractStatusValues = [
   "DRAFT",
   "NEGOTIATION",
   "SIGNED",
@@ -27,7 +27,7 @@ const contractStatusValues = [
   "CANCELLED",
 ] as const;
 
-const documentCategoryValues = [
+export const documentCategoryValues = [
   "GENERAL",
   "PROJECT",
   "EXPENSE",
