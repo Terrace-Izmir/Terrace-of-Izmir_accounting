@@ -1,0 +1,225 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum ChequeType {
+  CHEQUE
+  PROMISSORY_NOTE
+}
+
+enum ChequeStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum PartnershipTransactionType {
+  CONTRIBUTION
+  EXPENSE
+  WITHDRAWAL
+  ADJUSTMENT
+}
+
+enum ContractStatus {
+  DRAFT
+  NEGOTIATION
+  SIGNED
+  CLOSED
+  CANCELLED
+}
+
+enum DocumentCategory {
+  GENERAL
+  PROJECT
+  EXPENSE
+  CONTRACT
+  PARTNERSHIP
+  SALES
+}
+
+model Project {
+  id                Int                     @id @default(autoincrement())
+  name              String
+  code              String?                 @unique
+  description       String?
+  status            ProjectStatus           @default(PLANNING)
+  progress          Int                     @default(0)
+  startDate         DateTime?
+  endDate           DateTime?
+  budget            Decimal?
+  actualCost        Decimal?
+  location          String?
+  managerName       String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  progressLogs      ProjectProgressLog[]
+  expenses          Expense[]
+  cheques           Cheque[]
+  salesContracts    SalesContract[]
+  documents         DocumentRecord[]
+  partnershipEvents PartnershipTransaction[]
+}
+
+model ProjectProgressLog {
+  id         Int            @id @default(autoincrement())
+  projectId  Int
+  project    Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  progress   Int            @default(0)
+  status     ProjectStatus?
+  summary    String
+  details    String?
+  insights   String?
+  recordedAt DateTime       @default(now())
+  createdAt  DateTime       @default(now())
+}
+
+model PartnershipMember {
+  id          Int                     @id @default(autoincrement())
+  name        String
+  email       String?
+  phone       String?
+  role        String?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  expenses    Expense[]
+  cheques     Cheque[]
+  transactions PartnershipTransaction[]
+}
+
+model Expense {
+  id                       Int                         @id @default(autoincrement())
+  projectId                Int?
+  project                  Project?                    @relation(fields: [projectId], references: [id])
+  memberId                 Int?
+  member                   PartnershipMember?          @relation(fields: [memberId], references: [id])
+  title                    String
+  amount                   Decimal
+  currency                 String                      @default("TRY")
+  category                 String
+  note                     String?
+  vendor                   String?
+  paymentMethod            String?
+  incurredAt               DateTime
+  approvalStatus           String                      @default("PENDING")
+  createdAt                DateTime                    @default(now())
+  updatedAt                DateTime                    @updatedAt
+  attachments              ExpenseAttachment[]
+  documents                DocumentRecord[]            @relation("ExpenseDocuments")
+  partnershipTransactions  PartnershipTransaction[]    @relation("ExpenseTransactions")
+}
+
+model ExpenseAttachment {
+  id            Int      @id @default(autoincrement())
+  expenseId     Int
+  expense       Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  fileName      String
+  filePath      String
+  fileSize      Int
+  contentType   String
+  extractedText String?
+  uploadedAt    DateTime @default(now())
+}
+
+model Cheque {
+  id          Int                @id @default(autoincrement())
+  projectId   Int?
+  project     Project?           @relation(fields: [projectId], references: [id])
+  memberId    Int?
+  member      PartnershipMember? @relation(fields: [memberId], references: [id])
+  type        ChequeType         @default(CHEQUE)
+  status      ChequeStatus       @default(PENDING)
+  amount      Decimal
+  currency    String             @default("TRY")
+  issueDate   DateTime?
+  dueDate     DateTime
+  issuer      String?
+  recipient   String?
+  notes       String?
+  remindAt    DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model PartnershipTransaction {
+  id          Int                         @id @default(autoincrement())
+  memberId    Int
+  member      PartnershipMember           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  projectId   Int?
+  project     Project?                    @relation(fields: [projectId], references: [id])
+  expenseId   Int?
+  expense     Expense?                    @relation("ExpenseTransactions", fields: [expenseId], references: [id])
+  type        PartnershipTransactionType
+  amount      Decimal
+  description String?
+  occurredAt  DateTime                    @default(now())
+  createdAt   DateTime                    @default(now())
+}
+
+model SalesContract {
+  id             Int              @id @default(autoincrement())
+  projectId      Int?
+  project        Project?         @relation(fields: [projectId], references: [id])
+  contractNumber String?
+  title          String
+  clientName     String
+  status         ContractStatus   @default(DRAFT)
+  value          Decimal?
+  signedDate     DateTime?
+  deliveryDate   DateTime?
+  closingDate    DateTime?
+  notes          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  documents      DocumentRecord[]
+}
+
+model FileFolder {
+  id        Int             @id @default(autoincrement())
+  name      String
+  slug      String          @unique
+  parentId  Int?
+  parent    FileFolder?     @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children  FileFolder[]    @relation("FolderHierarchy")
+  documents DocumentRecord[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model DocumentRecord {
+  id          Int              @id @default(autoincrement())
+  name        String
+  description String?
+  category    DocumentCategory @default(GENERAL)
+  filePath    String
+  fileSize    Int
+  contentType String
+  projectId   Int?
+  project     Project?         @relation(fields: [projectId], references: [id])
+  expenseId   Int?
+  expense     Expense?         @relation("ExpenseDocuments", fields: [expenseId], references: [id])
+  contractId  Int?
+  contract    SalesContract?   @relation(fields: [contractId], references: [id])
+  folderId    Int?
+  folder      FileFolder?      @relation(fields: [folderId], references: [id])
+  tags        String?
+  uploadedBy  String?
+  uploadedAt  DateTime         @default(now())
+  createdAt   DateTime         @default(now())
+}
