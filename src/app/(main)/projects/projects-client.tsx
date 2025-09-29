@@ -9,7 +9,7 @@ import {
   Loader2,
   RefreshCcw,
 } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import useSWR from "swr";
 import type { z } from "zod";
 
@@ -36,6 +36,17 @@ const statusLabels: Record<ProjectStatus, string> = {
 type ProjectFormValues = z.infer<typeof createProjectSchema>;
 type ProgressFormValues = z.infer<typeof createProgressLogSchema>;
 
+const isProjectStatus = (value: string | null | undefined): value is ProjectStatus =>
+  value != null && projectStatusValues.includes(value as ProjectStatus);
+
+const toProjectStatus = (value: string | null | undefined): ProjectStatus | undefined =>
+  isProjectStatus(value) ? value : undefined;
+
+const getStatusLabel = (value: string | null | undefined): string => {
+  const status = toProjectStatus(value);
+  return status ? statusLabels[status] : value ?? "-";
+};
+
 interface ProjectsClientProps {
   initialProjects: ProjectSummary[];
 }
@@ -58,7 +69,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
   );
 
   const projectForm = useForm<ProjectFormValues>({
-    resolver: zodResolver(createProjectSchema) as unknown as ReturnType<typeof useForm<ProjectFormValues>>["resolver"],
+    resolver: zodResolver(createProjectSchema) as Resolver<ProjectFormValues>,
     defaultValues: {
       progress: 0,
       status: "PLANNING",
@@ -66,11 +77,11 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
   });
 
   const progressForm = useForm<ProgressFormValues>({
-    resolver: zodResolver(createProgressLogSchema) as unknown as ReturnType<typeof useForm<ProgressFormValues>>["resolver"],
+    resolver: zodResolver(createProgressLogSchema) as Resolver<ProgressFormValues>,
     defaultValues: {
       progress: selectedProject?.progress ?? 0,
       summary: "",
-      status: selectedProject?.status ?? undefined,
+      status: toProjectStatus(selectedProject?.status),
     } satisfies Partial<ProgressFormValues>,
   });
 
@@ -169,7 +180,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
                     progressForm.reset({
                       projectId: project.id,
                       progress: project.progress,
-                      status: project.status,
+                      status: toProjectStatus(project.status),
                       summary: "",
                     });
                   }}
@@ -179,7 +190,7 @@ export function ProjectsClient({ initialProjects }: ProjectsClientProps) {
                     <div>
                       <h3 className="text-base font-semibold text-white">{project.name}</h3>
                       <p className="text-xs uppercase tracking-wide text-slate-400">
-                        {project.code ?? "Kodsuz"} • {statusLabels[project.status] ?? project.status}
+                        {project.code ?? "Kodsuz"} • {getStatusLabel(project.status)}
                       </p>
                     </div>
                     <div className="text-right text-sm text-slate-300">
