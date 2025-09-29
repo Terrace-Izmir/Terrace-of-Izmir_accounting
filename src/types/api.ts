@@ -61,14 +61,32 @@ export interface ChequeDTO {
   currency: string;
   status: string;
   type: string;
+  purpose?: string | null;
   issueDate?: string | null;
   dueDate: string;
   issuer?: string | null;
   recipient?: string | null;
   remindAt?: string | null;
+  reminderSent?: boolean;
+  reminderSentAt?: string | null;
+  reminderCount?: number;
   notes?: string | null;
   project?: { id: number; name: string } | null;
   member?: { id: number; name: string } | null;
+  contract?: {
+    id: number;
+    title: string;
+    clientName: string;
+    contractType: string;
+  } | null;
+  propertyUnit?: {
+    id: number;
+    name: string;
+    status: string;
+    block?: string | null;
+    floor?: string | null;
+    unitNumber?: string | null;
+  } | null;
 }
 
 export interface PartnershipMemberDTO {
@@ -108,12 +126,15 @@ export interface SalesContractDTO {
   title: string;
   clientName: string;
   status: string;
+  contractType: string;
   value?: number | null;
   signedDate?: string | null;
   deliveryDate?: string | null;
   closingDate?: string | null;
   notes?: string | null;
   project?: { id: number; name: string } | null;
+  propertyUnit?: PropertyUnitDTO | null;
+  cheques?: ChequeDTO[];
 }
 
 export interface DocumentRecordDTO {
@@ -127,6 +148,8 @@ export interface DocumentRecordDTO {
   projectId?: number | null;
   expenseId?: number | null;
   contractId?: number | null;
+  chequeId?: number | null;
+  propertyUnitId?: number | null;
   folderId?: number | null;
   tags?: string | null;
   uploadedBy?: string | null;
@@ -134,7 +157,18 @@ export interface DocumentRecordDTO {
   project?: { id: number; name: string } | null;
   expense?: { id: number; title: string } | null;
   contract?: { id: number; title: string } | null;
+  cheque?: {
+    id: number;
+    amount: number;
+    currency: string;
+    status: string;
+    dueDate: string;
+  } | null;
+  propertyUnit?: PropertyUnitDTO | null;
   folder?: { id: number; name: string } | null;
+  extractedText?: string | null;
+  ocrProcessedAt?: string | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface FileFolderDTO {
@@ -143,4 +177,27 @@ export interface FileFolderDTO {
   slug: string;
   parentId?: number | null;
   children: FileFolderDTO[];
+}
+
+export interface PropertyUnitDTO {
+  id: number;
+  projectId: number;
+  name: string;
+  block?: string | null;
+  floor?: string | null;
+  unitNumber?: string | null;
+  grossArea?: number | null;
+  netArea?: number | null;
+  status: string;
+  ownerName?: string | null;
+  ownerContact?: string | null;
+  notes?: string | null;
+  purchaseDate?: string | null;
+  handoverDate?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  project?: { id: number; name: string } | null;
+  contracts?: SalesContractDTO[];
+  cheques?: ChequeDTO[];
+  documents?: DocumentRecordDTO[];
 }

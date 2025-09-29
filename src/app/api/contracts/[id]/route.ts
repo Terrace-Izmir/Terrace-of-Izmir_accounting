@@ -28,11 +28,34 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const contract = await prisma.salesContract.update({
       where: { id },
       data: payload,
+      include: {
+        project: {
+          select: { id: true, name: true },
+        },
+        propertyUnit: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+            block: true,
+            floor: true,
+            unitNumber: true,
+          },
+        },
+        cheques: {
+          orderBy: { dueDate: "asc" },
+        },
+        documents: true,
+      },
     });
 
     return success({
       ...contract,
       value: contract.value ? Number(contract.value) : null,
+      cheques: contract.cheques.map((cheque: (typeof contract.cheques)[number]) => ({
+        ...cheque,
+        amount: Number(cheque.amount),
+      })),
     });
   } catch (error) {
     return handleError(error);

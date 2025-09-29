@@ -26,7 +26,32 @@ export async function getDashboardSummary() {
     prisma.cheque.findMany({
       where: {
         status: "PENDING",
-        dueDate: { gte: today, lte: upcomingWindow },
+        OR: [
+          { dueDate: { gte: today, lte: upcomingWindow } },
+          {
+            remindAt: {
+              not: null,
+              gte: today,
+              lte: upcomingWindow,
+            },
+          },
+        ],
+      },
+      include: {
+        contract: {
+          select: { id: true, title: true, clientName: true, contractType: true },
+        },
+        propertyUnit: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+            block: true,
+            floor: true,
+            unitNumber: true,
+          },
+        },
+        project: { select: { id: true, name: true } },
       },
       orderBy: { dueDate: "asc" },
       take: 10,

@@ -40,6 +40,12 @@ const NAV_ITEMS = [
     description: "Satış ve sözleşme takibi",
   },
   {
+    label: "Bağımsız Bölümler",
+    href: "/property-units",
+    icon: "units",
+    description: "Daire envanteri ve sahiplik",
+  },
+  {
     label: "Dosya Merkezi",
     href: "/documents",
     icon: "documents",

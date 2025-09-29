@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 import { handleError, success } from "@/lib/api-utils";
@@ -25,7 +24,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const id = parseChequeId(params);
     const body = await request.json();
 
-    const data: Prisma.ChequeUpdateInput = {};
+    const data: Record<string, unknown> = {};
 
     if (body.status) data.status = body.status;
     if (body.notes !== undefined) data.notes = body.notes;
@@ -57,54 +56,57 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (body.reminderCount !== undefined)
       data.reminderCount = Number(body.reminderCount);
 
-    const transaction = [
-      prisma.cheque.update({
-        where: { id },
-        data,
-        include: {
-          project: { select: { id: true, name: true } },
-          member: { select: { id: true, name: true } },
-          contract: {
-            select: { id: true, title: true, clientName: true, contractType: true },
-          },
-          propertyUnit: {
-            select: {
-              id: true,
-              name: true,
-              status: true,
-              block: true,
-              floor: true,
-              unitNumber: true,
-            },
-          },
-          documents: {
-            select: { id: true, name: true, filePath: true },
-          },
-        },
-      }),
-    ] as const;
+    const logReminder = Boolean(body.recordReminder);
 
-    if (body.recordReminder) {
-      const reminderData = {
-        chequeId: id,
-        reminderSentAt: body.reminderSentAt
-          ? new Date(body.reminderSentAt)
-          : undefined,
-        channel: body.reminderChannel ?? undefined,
-        notes: body.reminderNotes ?? undefined,
-      };
-
-      (transaction as unknown as Array<Promise<unknown>>).push(
-        prisma.chequeReminderLog.create({ data: reminderData }),
-      );
+    if (logReminder) {
+      if (data.reminderSent === undefined) data.reminderSent = true;
+      if (data.reminderSentAt === undefined) data.reminderSentAt = new Date();
+      if (data.reminderCount === undefined)
+        data.reminderCount = { increment: 1 };
     }
 
-    const [cheque] = (await prisma.$transaction(transaction as unknown as [
-      ReturnType<typeof prisma.cheque.update>,
-      ...(typeof body.recordReminder !== "undefined"
-        ? [ReturnType<typeof prisma.chequeReminderLog.create>]
-        : []),
-    ])) as [Awaited<ReturnType<typeof prisma.cheque.update>>, ...unknown[]];
+    const include = {
+      project: { select: { id: true, name: true } },
+      member: { select: { id: true, name: true } },
+      contract: {
+        select: { id: true, title: true, clientName: true, contractType: true },
+      },
+      propertyUnit: {
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          block: true,
+          floor: true,
+          unitNumber: true,
+        },
+      },
+      documents: {
+        select: { id: true, name: true, filePath: true },
+      },
+    } as const;
+
+    const hasUpdateFields = Object.keys(data).length > 0;
+
+    const baseQuery = hasUpdateFields
+      ? prisma.cheque.update({ where: { id }, data, include })
+      : prisma.cheque.findUniqueOrThrow({ where: { id }, include });
+
+    const [cheque] = logReminder
+      ? await prisma.$transaction([
+          baseQuery,
+          prisma.chequeReminderLog.create({
+            data: {
+              chequeId: id,
+              reminderSentAt: body.reminderSentAt
+                ? new Date(body.reminderSentAt)
+                : undefined,
+              channel: body.reminderChannel ?? undefined,
+              notes: body.reminderNotes ?? undefined,
+            },
+          }),
+        ])
+      : [await baseQuery];
 
     return success({
       ...cheque,

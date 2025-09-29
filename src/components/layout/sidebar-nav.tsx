@@ -4,6 +4,7 @@ import {
   Building2,
   FileStack,
   HandPlatter,
+  Home,
   LayoutDashboard,
   Receipt,
   ScrollText,
@@ -20,6 +21,7 @@ const ICON_MAP = {
   cheques: ScrollText,
   partnership: Users2,
   contracts: HandPlatter,
+  units: Home,
   documents: FileStack,
 } as const;
 
