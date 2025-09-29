@@ -12,6 +12,13 @@ export const chequeTypeValues = ["CHEQUE", "PROMISSORY_NOTE"] as const;
 
 export const chequeStatusValues = ["PENDING", "PAID", "CANCELLED"] as const;
 
+export const chequePurposeValues = [
+  "PROPERTY_SALE_PAYMENT",
+  "MATERIAL_PURCHASE_PAYMENT",
+  "SERVICE_PAYMENT",
+  "OTHER",
+] as const;
+
 export const partnershipTransactionValues = [
   "CONTRIBUTION",
   "EXPENSE",
@@ -27,6 +34,13 @@ export const contractStatusValues = [
   "CANCELLED",
 ] as const;
 
+export const salesContractTypeValues = [
+  "PROPERTY_SALE",
+  "MATERIAL_PURCHASE",
+  "SERVICE",
+  "OTHER",
+] as const;
+
 export const documentCategoryValues = [
   "GENERAL",
   "PROJECT",
@@ -34,6 +48,14 @@ export const documentCategoryValues = [
   "CONTRACT",
   "PARTNERSHIP",
   "SALES",
+] as const;
+
+export const propertyUnitStatusValues = [
+  "AVAILABLE",
+  "RESERVED",
+  "SOLD",
+  "DELIVERED",
+  "TRANSFERRED",
 ] as const;
 
 const decimal = z.coerce.number();
@@ -81,8 +103,11 @@ export const createExpenseSchema = z.object({
 export const createChequeSchema = z.object({
   projectId: z.coerce.number().int().optional(),
   memberId: z.coerce.number().int().optional(),
+  contractId: z.coerce.number().int().optional(),
+  propertyUnitId: z.coerce.number().int().optional(),
   type: z.enum(chequeTypeValues).default("CHEQUE"),
   status: z.enum(chequeStatusValues).default("PENDING"),
+  purpose: z.enum(chequePurposeValues).optional(),
   amount: decimal.positive(),
   currency: z.string().default("TRY"),
   issueDate: z.coerce.date().optional(),
@@ -116,11 +141,13 @@ export const createContractSchema = z.object({
   title: z.string().min(1),
   clientName: z.string().min(1),
   status: z.enum(contractStatusValues).optional(),
+  contractType: z.enum(salesContractTypeValues).optional(),
   value: decimal.nonnegative().optional(),
   signedDate: z.coerce.date().optional(),
   deliveryDate: z.coerce.date().optional(),
   closingDate: z.coerce.date().optional(),
   notes: z.string().optional(),
+  propertyUnitId: z.coerce.number().int().optional(),
 });
 
 export const createDocumentSchema = z.object({
@@ -130,9 +157,12 @@ export const createDocumentSchema = z.object({
   projectId: z.coerce.number().int().optional(),
   expenseId: z.coerce.number().int().optional(),
   contractId: z.coerce.number().int().optional(),
+  chequeId: z.coerce.number().int().optional(),
+  propertyUnitId: z.coerce.number().int().optional(),
   folderId: z.coerce.number().int().optional(),
   tags: z.string().optional(),
   uploadedBy: z.string().optional(),
+  metadata: z.string().optional(),
 });
 
 export const createFolderSchema = z.object({
@@ -140,3 +170,21 @@ export const createFolderSchema = z.object({
   slug: z.string().min(1),
   parentId: z.coerce.number().int().optional(),
 });
+
+export const createPropertyUnitSchema = z.object({
+  projectId: z.coerce.number().int(),
+  name: z.string().min(1),
+  block: z.string().optional(),
+  floor: z.string().optional(),
+  unitNumber: z.string().optional(),
+  grossArea: decimal.nonnegative().optional(),
+  netArea: decimal.nonnegative().optional(),
+  status: z.enum(propertyUnitStatusValues).optional(),
+  ownerName: z.string().optional(),
+  ownerContact: z.string().optional(),
+  notes: z.string().optional(),
+  purchaseDate: z.coerce.date().optional(),
+  handoverDate: z.coerce.date().optional(),
+});
+
+export const updatePropertyUnitSchema = createPropertyUnitSchema.partial();

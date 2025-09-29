@@ -29,6 +29,13 @@ enum ChequeStatus {
   CANCELLED
 }
 
+enum ChequePurpose {
+  PROPERTY_SALE_PAYMENT
+  MATERIAL_PURCHASE_PAYMENT
+  SERVICE_PAYMENT
+  OTHER
+}
+
 enum PartnershipTransactionType {
   CONTRIBUTION
   EXPENSE
@@ -44,6 +51,13 @@ enum ContractStatus {
   CANCELLED
 }
 
+enum SalesContractType {
+  PROPERTY_SALE
+  MATERIAL_PURCHASE
+  SERVICE
+  OTHER
+}
+
 enum DocumentCategory {
   GENERAL
   PROJECT
@@ -51,6 +65,14 @@ enum DocumentCategory {
   CONTRACT
   PARTNERSHIP
   SALES
+}
+
+enum PropertyUnitStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  DELIVERED
+  TRANSFERRED
 }
 
 model Project {
@@ -74,6 +96,7 @@ model Project {
   salesContracts    SalesContract[]
   documents         DocumentRecord[]
   partnershipEvents PartnershipTransaction[]
+  propertyUnits     PropertyUnit[]
 }
 
 model ProjectProgressLog {
@@ -142,8 +165,13 @@ model Cheque {
   project     Project?           @relation(fields: [projectId], references: [id])
   memberId    Int?
   member      PartnershipMember? @relation(fields: [memberId], references: [id])
+  contractId  Int?
+  contract    SalesContract?     @relation(fields: [contractId], references: [id])
+  propertyUnitId Int?
+  propertyUnit PropertyUnit?     @relation(fields: [propertyUnitId], references: [id])
   type        ChequeType         @default(CHEQUE)
   status      ChequeStatus       @default(PENDING)
+  purpose     ChequePurpose?
   amount      Decimal
   currency    String             @default("TRY")
   issueDate   DateTime?
@@ -152,8 +180,13 @@ model Cheque {
   recipient   String?
   notes       String?
   remindAt    DateTime?
+  reminderSent Boolean           @default(false)
+  reminderSentAt DateTime?
+  reminderCount Int              @default(0)
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
+  documents   DocumentRecord[]
+  reminderLogs ChequeReminderLog[]
 }
 
 model PartnershipTransaction {
@@ -179,14 +212,18 @@ model SalesContract {
   title          String
   clientName     String
   status         ContractStatus   @default(DRAFT)
+  contractType   SalesContractType @default(PROPERTY_SALE)
   value          Decimal?
   signedDate     DateTime?
   deliveryDate   DateTime?
   closingDate    DateTime?
   notes          String?
+  propertyUnitId Int?
+  propertyUnit   PropertyUnit?    @relation(fields: [propertyUnitId], references: [id])
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   documents      DocumentRecord[]
+  cheques        Cheque[]
 }
 
 model FileFolder {
@@ -215,10 +252,49 @@ model DocumentRecord {
   expense     Expense?         @relation("ExpenseDocuments", fields: [expenseId], references: [id])
   contractId  Int?
   contract    SalesContract?   @relation(fields: [contractId], references: [id])
+  chequeId    Int?
+  cheque      Cheque?          @relation(fields: [chequeId], references: [id])
+  propertyUnitId Int?
+  propertyUnit PropertyUnit?   @relation(fields: [propertyUnitId], references: [id])
   folderId    Int?
   folder      FileFolder?      @relation(fields: [folderId], references: [id])
   tags        String?
   uploadedBy  String?
   uploadedAt  DateTime         @default(now())
   createdAt   DateTime         @default(now())
+  extractedText String?
+  ocrProcessedAt DateTime?
+  metadata    Json?
+}
+
+model PropertyUnit {
+  id             Int             @id @default(autoincrement())
+  projectId      Int
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name           String
+  block          String?
+  floor          String?
+  unitNumber     String?
+  grossArea      Decimal?
+  netArea        Decimal?
+  status         PropertyUnitStatus @default(AVAILABLE)
+  ownerName      String?
+  ownerContact   String?
+  notes          String?
+  purchaseDate   DateTime?
+  handoverDate   DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  contracts      SalesContract[]
+  cheques        Cheque[]
+  documents      DocumentRecord[]
+}
+
+model ChequeReminderLog {
+  id             Int      @id @default(autoincrement())
+  chequeId       Int
+  cheque         Cheque   @relation(fields: [chequeId], references: [id], onDelete: Cascade)
+  reminderSentAt DateTime @default(now())
+  channel        String?
+  notes          String?
 }
