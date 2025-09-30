@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
 
-    const chequeId = parseNumber(formData.get("chequeId"));
+  const chequeId = parseNumber(formData.get("chequeId"));
     const projectId = parseNumber(formData.get("projectId"));
     const contractId = parseNumber(formData.get("contractId"));
     const propertyUnitId = parseNumber(formData.get("propertyUnitId"));
@@ -54,6 +54,27 @@ export async function POST(request: NextRequest) {
     if (!files.length) {
       throw new Error("OCR için en az bir dosya yükleyin");
     }
+
+    const formFields: Partial<Record<keyof ParsedFields, FormDataEntryValue | null>> = {};
+    const formFieldKeys: Array<keyof ParsedFields> = [
+      "bankName",
+      "bankBranch",
+      "bankCity",
+      "bankAccount",
+      "iban",
+      "serialNumber",
+      "endorsedBy",
+      "issuePlace",
+      "issuer",
+      "recipient",
+    ];
+    for (const key of formFieldKeys) {
+      formFields[key] = formData.get(key);
+    }
+    const formAmount = formData.get("amount");
+    const formDueDate = formData.get("dueDate");
+    const formIssueDate = formData.get("issueDate");
+    const formCurrency = formData.get("currency");
 
     const aggregatedFields: ParsedFields = {};
     const documents: Array<{
@@ -159,9 +180,55 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const resolvedFields: ParsedFields = {
+      amount:
+        typeof formAmount === "string" && formAmount
+          ? Number.parseFloat(formAmount) || aggregatedFields.amount
+          : aggregatedFields.amount,
+      currency:
+        typeof formCurrency === "string" && formCurrency
+          ? formCurrency
+          : aggregatedFields.currency,
+      dueDate: formDueDate ? String(formDueDate) : aggregatedFields.dueDate,
+      issueDate: formIssueDate ? String(formIssueDate) : aggregatedFields.issueDate,
+      issuer: typeof formFields.issuer === "string" && formFields.issuer ? formFields.issuer : aggregatedFields.issuer,
+      recipient:
+        typeof formFields.recipient === "string" && formFields.recipient
+          ? formFields.recipient
+          : aggregatedFields.recipient,
+      bankName:
+        typeof formFields.bankName === "string" && formFields.bankName
+          ? formFields.bankName
+          : aggregatedFields.bankName,
+      bankBranch:
+        typeof formFields.bankBranch === "string" && formFields.bankBranch
+          ? formFields.bankBranch
+          : aggregatedFields.bankBranch,
+      bankCity:
+        typeof formFields.bankCity === "string" && formFields.bankCity ? formFields.bankCity : aggregatedFields.bankCity,
+      bankAccount:
+        typeof formFields.bankAccount === "string" && formFields.bankAccount
+          ? formFields.bankAccount
+          : aggregatedFields.bankAccount,
+      iban: typeof formFields.iban === "string" && formFields.iban ? formFields.iban : aggregatedFields.iban,
+      serialNumber:
+        typeof formFields.serialNumber === "string" && formFields.serialNumber
+          ? formFields.serialNumber
+          : aggregatedFields.serialNumber,
+      endorsedBy:
+        typeof formFields.endorsedBy === "string" && formFields.endorsedBy
+          ? formFields.endorsedBy
+          : aggregatedFields.endorsedBy,
+      issuePlace:
+        typeof formFields.issuePlace === "string" && formFields.issuePlace
+          ? formFields.issuePlace
+          : aggregatedFields.issuePlace,
+    };
+
     return created({
       documents,
       aggregatedFields,
+      resolvedFields,
       documentIds: documents.map((document) => document.documentId),
     });
   } catch (error) {

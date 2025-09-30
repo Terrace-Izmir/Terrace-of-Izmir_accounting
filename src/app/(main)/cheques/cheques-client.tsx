@@ -90,7 +90,7 @@ export function ChequesClient({ initialCheques, referenceData }: ChequesClientPr
   const apiKey = useMemo(() => {
     const params = new URLSearchParams({ withLogs: "true" });
     if (searchTerm.trim()) {
-      params.set("q", searchTerm.trim());
+      params.set("query", searchTerm.trim());
     }
     return `/api/cheques?${params.toString()}`;
   }, [searchTerm]);
@@ -112,6 +112,10 @@ export function ChequesClient({ initialCheques, referenceData }: ChequesClientPr
       dueDate: new Date(),
       remindAt: addDays(new Date(), 7),
       documentIds: [],
+      ocrExtractedText: "",
+      ocrConfidence: undefined,
+      ocrMetadata: undefined,
+      ocrProcessedAt: undefined,
     } satisfies Partial<ChequeFormValues>,
   });
 
@@ -145,6 +149,10 @@ export function ChequesClient({ initialCheques, referenceData }: ChequesClientPr
   issuePlace: "",
       issueDate: undefined,
       documentIds: [],
+      ocrExtractedText: "",
+      ocrConfidence: undefined,
+      ocrMetadata: undefined,
+      ocrProcessedAt: undefined,
     });
     setUploadedDocumentIds([]);
     setOcrDocuments([]);
@@ -199,13 +207,37 @@ export function ChequesClient({ initialCheques, referenceData }: ChequesClientPr
 
       const files = Array.from(fileList);
       const formData = new FormData();
-      files.forEach((file) => formData.append("files", file));
+  files.forEach((file) => formData.append("files", file));
 
       const currentValues = chequeForm.getValues();
       if (currentValues.projectId) formData.append("projectId", String(currentValues.projectId));
       if (currentValues.contractId) formData.append("contractId", String(currentValues.contractId));
       if (currentValues.propertyUnitId)
         formData.append("propertyUnitId", String(currentValues.propertyUnitId));
+      if (currentValues.amount != null) formData.append("amount", String(currentValues.amount));
+      if (currentValues.dueDate)
+        formData.append("dueDate", format(currentValues.dueDate, "yyyy-MM-dd"));
+      if (currentValues.issueDate)
+        formData.append("issueDate", format(currentValues.issueDate, "yyyy-MM-dd"));
+      if (currentValues.currency) formData.append("currency", currentValues.currency);
+      const textFields: Array<keyof ParsedChequeFields> = [
+        "bankName",
+        "bankBranch",
+        "bankCity",
+        "bankAccount",
+        "iban",
+        "serialNumber",
+        "endorsedBy",
+        "issuePlace",
+        "issuer",
+        "recipient",
+      ];
+      textFields.forEach((field) => {
+        const value = currentValues[field as keyof ChequeFormValues];
+        if (typeof value === "string" && value.trim()) {
+          formData.append(field, value.trim());
+        }
+      });
 
       setIsUploadingOcr(true);
       setOcrError(null);
@@ -224,37 +256,63 @@ export function ChequesClient({ initialCheques, referenceData }: ChequesClientPr
         const payload = (await response.json()) as {
           documents: OcrDocumentResult[];
           aggregatedFields?: Partial<ParsedChequeFields>;
+          resolvedFields?: Partial<ParsedChequeFields>;
           documentIds?: number[];
         };
 
         const documentIds = payload.documentIds ?? [];
         const aggregated = payload.aggregatedFields ?? {};
+        const resolved = payload.resolvedFields ? { ...aggregated, ...payload.resolvedFields } : aggregated;
+        const firstDocument = payload.documents?.[0];
+        const combinedText = (payload.documents ?? [])
+          .map((document) => document.ocrText?.trim())
+          .filter((text): text is string => Boolean(text))
+          .join("\n\n");
 
-        if (aggregated.amount !== undefined) {
-          chequeForm.setValue("amount", aggregated.amount, { shouldDirty: true });
+        if (resolved.amount !== undefined) {
+          chequeForm.setValue("amount", resolved.amount, { shouldDirty: true });
         }
-        if (aggregated.dueDate) {
-          chequeForm.setValue("dueDate", new Date(aggregated.dueDate), { shouldDirty: true });
+        if (resolved.dueDate) {
+          chequeForm.setValue("dueDate", new Date(resolved.dueDate), { shouldDirty: true });
         }
-        if (aggregated.issueDate) {
-          chequeForm.setValue("issueDate", new Date(aggregated.issueDate), { shouldDirty: true });
+        if (resolved.issueDate) {
+          chequeForm.setValue("issueDate", new Date(resolved.issueDate), { shouldDirty: true });
+        }
+        if (resolved.currency) {
+          chequeForm.setValue("currency", resolved.currency, { shouldDirty: true });
         }
 
-        chequeForm.setValue("bankName", aggregated.bankName ?? "", { shouldDirty: true });
-        chequeForm.setValue("bankBranch", aggregated.bankBranch ?? "", { shouldDirty: true });
-        chequeForm.setValue("bankCity", aggregated.bankCity ?? "", { shouldDirty: true });
-        chequeForm.setValue("bankAccount", aggregated.bankAccount ?? "", { shouldDirty: true });
-        chequeForm.setValue("iban", aggregated.iban ?? "", { shouldDirty: true });
-        chequeForm.setValue("serialNumber", aggregated.serialNumber ?? "", { shouldDirty: true });
-        chequeForm.setValue("endorsedBy", aggregated.endorsedBy ?? "", { shouldDirty: true });
-        chequeForm.setValue("issuePlace", aggregated.issuePlace ?? "", { shouldDirty: true });
-        chequeForm.setValue("issuer", aggregated.issuer ?? "", { shouldDirty: true });
-        chequeForm.setValue("recipient", aggregated.recipient ?? "", { shouldDirty: true });
+        chequeForm.setValue("bankName", resolved.bankName ?? "", { shouldDirty: true });
+        chequeForm.setValue("bankBranch", resolved.bankBranch ?? "", { shouldDirty: true });
+        chequeForm.setValue("bankCity", resolved.bankCity ?? "", { shouldDirty: true });
+        chequeForm.setValue("bankAccount", resolved.bankAccount ?? "", { shouldDirty: true });
+        chequeForm.setValue("iban", resolved.iban ?? "", { shouldDirty: true });
+        chequeForm.setValue("serialNumber", resolved.serialNumber ?? "", { shouldDirty: true });
+        chequeForm.setValue("endorsedBy", resolved.endorsedBy ?? "", { shouldDirty: true });
+        chequeForm.setValue("issuePlace", resolved.issuePlace ?? "", { shouldDirty: true });
+        chequeForm.setValue("issuer", resolved.issuer ?? "", { shouldDirty: true });
+        chequeForm.setValue("recipient", resolved.recipient ?? "", { shouldDirty: true });
         chequeForm.setValue("documentIds", documentIds, { shouldDirty: true });
+        if (combinedText || firstDocument?.ocrText) {
+          chequeForm.setValue("ocrExtractedText", combinedText || firstDocument?.ocrText || "", {
+            shouldDirty: true,
+          });
+        }
+        if (typeof firstDocument?.ocrConfidence === "number") {
+          chequeForm.setValue("ocrConfidence", firstDocument.ocrConfidence, { shouldDirty: true });
+        }
+        if (firstDocument?.documentMetadata) {
+          chequeForm.setValue("ocrMetadata", firstDocument.documentMetadata as Record<string, unknown>, {
+            shouldDirty: true,
+          });
+        }
+        if ((payload.documents?.length ?? 0) > 0) {
+          chequeForm.setValue("ocrProcessedAt", new Date(), { shouldDirty: true });
+        }
 
         setUploadedDocumentIds(documentIds);
         setOcrDocuments(payload.documents ?? []);
-        setOcrAggregatedFields(aggregated);
+  setOcrAggregatedFields(aggregated);
       } catch (error) {
         const message = error instanceof Error ? error.message : "OCR sırasında hata oluştu";
         setOcrError(message);
