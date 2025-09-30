@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 import { handleError, success } from "@/lib/api-utils";
@@ -30,6 +31,24 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (body.notes !== undefined) data.notes = body.notes;
     if (body.remindAt !== undefined)
       data.remindAt = body.remindAt ? new Date(body.remindAt) : null;
+    if (body.bankName !== undefined) data.bankName = body.bankName ?? null;
+    if (body.bankBranch !== undefined) data.bankBranch = body.bankBranch ?? null;
+    if (body.bankCity !== undefined) data.bankCity = body.bankCity ?? null;
+    if (body.bankAccount !== undefined) data.bankAccount = body.bankAccount ?? null;
+    if (body.iban !== undefined) data.iban = body.iban ?? null;
+    if (body.serialNumber !== undefined) data.serialNumber = body.serialNumber ?? null;
+    if (body.endorsedBy !== undefined) data.endorsedBy = body.endorsedBy ?? null;
+    if (body.issuePlace !== undefined) data.issuePlace = body.issuePlace ?? null;
+    if (body.ocrExtractedText !== undefined)
+      data.ocrExtractedText = body.ocrExtractedText ?? null;
+    if (body.ocrConfidence !== undefined)
+      data.ocrConfidence = body.ocrConfidence === null ? null : Number(body.ocrConfidence);
+    if (body.ocrMetadata !== undefined)
+      data.ocrMetadata = body.ocrMetadata
+        ? (body.ocrMetadata as Prisma.InputJsonValue)
+        : null;
+    if (body.ocrProcessedAt !== undefined)
+      data.ocrProcessedAt = body.ocrProcessedAt ? new Date(body.ocrProcessedAt) : null;
     if (body.contractId !== undefined)
       data.contract = body.contractId
         ? { connect: { id: Number(body.contractId) } }

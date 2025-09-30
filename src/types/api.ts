@@ -66,11 +66,23 @@ export interface ChequeDTO {
   dueDate: string;
   issuer?: string | null;
   recipient?: string | null;
+  bankName?: string | null;
+  bankBranch?: string | null;
+  bankCity?: string | null;
+  bankAccount?: string | null;
+  iban?: string | null;
+  serialNumber?: string | null;
+  endorsedBy?: string | null;
+  issuePlace?: string | null;
   remindAt?: string | null;
   reminderSent?: boolean;
   reminderSentAt?: string | null;
   reminderCount?: number;
   notes?: string | null;
+  ocrExtractedText?: string | null;
+  ocrConfidence?: number | null;
+  ocrMetadata?: Record<string, unknown> | null;
+  ocrProcessedAt?: string | null;
   project?: { id: number; name: string } | null;
   member?: { id: number; name: string } | null;
   contract?: {
@@ -87,6 +99,7 @@ export interface ChequeDTO {
     floor?: string | null;
     unitNumber?: string | null;
   } | null;
+  documents?: DocumentRecordDTO[];
 }
 
 export interface PartnershipMemberDTO {

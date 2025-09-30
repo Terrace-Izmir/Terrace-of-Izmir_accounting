@@ -114,8 +114,21 @@ export const createChequeSchema = z.object({
   dueDate: z.coerce.date(),
   issuer: z.string().optional(),
   recipient: z.string().optional(),
+  bankName: z.string().optional(),
+  bankBranch: z.string().optional(),
+  bankCity: z.string().optional(),
+  bankAccount: z.string().optional(),
+  iban: z.string().optional(),
+  serialNumber: z.string().optional(),
+  endorsedBy: z.string().optional(),
+  issuePlace: z.string().optional(),
   remindAt: z.coerce.date().optional(),
   notes: z.string().optional(),
+  ocrExtractedText: z.string().optional(),
+  ocrConfidence: z.coerce.number().min(0).max(100).optional(),
+  ocrMetadata: z.record(z.string(), z.unknown()).optional(),
+  ocrProcessedAt: z.coerce.date().optional(),
+  documentIds: z.array(z.coerce.number().int()).default([]),
 });
 
 export const createPartnershipMemberSchema = z.object({
